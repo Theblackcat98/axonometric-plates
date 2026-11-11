@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Template — Axonometric Plate</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #e3ded4;
+    }
+    #canvas-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+    canvas {
+      display: block;
+    }
+    #paper-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      mix-blend-mode: multiply;
+      opacity: 0.55;
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas-container">
+    <canvas id="paper-overlay"></canvas>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script>
+    // =========================================================================
+    // 1. DETERMINISTIC PRNG & DRAFTING PAPER TEXTURE OVERLAY
+    // =========================================================================
+    function mulberry32(a) {
+      return function () {
+        let t = (a += 0x6d2b79f5);
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+    const rng = mulberry32(2026); // SEED: replace with a year that matters to the subject
+
+    function generatePaperOverlay() {
+      const canvas = document.getElementById('paper-overlay');
+      const w = (canvas.width = window.innerWidth);
+      const h = (canvas.height = window.innerHeight);
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#ede9e0';
+      ctx.fillRect(0, 0, w, h);
+
+      // Subtle orthogonal drafting grid
+      ctx.strokeStyle = 'rgba(130, 120, 108, 0.09)';
+      ctx.lineWidth = 1;
+      const step = 28;
+      ctx.beginPath();
+      for (let x = 0; x < w; x += step) {
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+      }
+      for (let y = 0; y < h; y += step) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+      }
+      ctx.stroke();
+
+      // Organic rough paper fiber grain
+      const imgData = ctx.getImageData(0, 0, w, h);
+      const data = imgData.data;
+      const localRng = mulberry32(8841);
+      for (let i = 0; i < data.length; i += 4) {
+        const grain = (localRng() - 0.5) * 18;
+        data[i] = Math.min(255, Math.max(0, data[i] + grain));
+        data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + grain));
+        data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + grain));
+      }
+      ctx.putImageData(imgData, 0, 0);
+    }
+    generatePaperOverlay();
+
+    // =========================================================================
+    // 2. THREE.JS SCENE & AXONOMETRIC ORTHOGRAPHIC CAMERA
+    // =========================================================================
+    const container = document.getElementById('canvas-container');
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0xe5e0d6, 1);
+    container.insertBefore(renderer.domElement, document.getElementById('paper-overlay'));
+
+    const scene = new THREE.Scene();
+
+    const frustumSize = 40; // SUBJECT FIT: frame the subject ~70% of height
+    const aspect = window.innerWidth / window.innerHeight;
+    const camera = new THREE.OrthographicCamera(
+      (-frustumSize * aspect) / 2,
+      (frustumSize * aspect) / 2,
+      frustumSize / 2,
+      -frustumSize / 2,
+      -200,
+      300
+    );
+
+    const targetY = 5.4; // SUBJECT FIT: vertical centre of the subject
+    const camDist = 48;
+    const defaultCamPos = new THREE.Vector3(camDist, targetY + camDist * 0.78, camDist);
+    camera.position.copy(defaultCamPos);
+    camera.lookAt(0, targetY, 0);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, targetY, 0);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.update();
+
+    window.addEventListener('dblclick', () => {
+      camera.position.copy(defaultCamPos);
+      controls.target.set(0, targetY, 0);
+      camera.zoom = 1;
+      camera.updateProjectionMatrix();
+      controls.update();
+    });
+
+    // =========================================================================
+    // 3. COLOR WASH PALETTE & MULTI-WEIGHT INK ENGINE
+    // =========================================================================
+    const PALETTE = {
+      cream:      { lit: 0xefe9de, mid: 0xe4ddd1, shade: 0xd2c9b9, top: 0xf4f0e6, bot: 0x8f8274 },
+      stone:      { lit: 0xe3dcd0, mid: 0xd6cec0, shade: 0xc2b9a9, top: 0xeae4da, bot: 0x807467 },
+      coreWall:   { lit: 0xc9bfb0, mid: 0xb5aa9a, shade: 0x998e7e, top: 0xd6cec0, bot: 0x695e53 },
+      terracotta: { lit: 0xc27a63, mid: 0xb06851, shade: 0x94513d, top: 0xd4947e, bot: 0x6b3829 },
+      brickDark:  { lit: 0x9e5b47, mid: 0x8a4c3a, shade: 0x703b2c, top: 0xb36f5b, bot: 0x4f271c },
+      teal:       { lit: 0x94b9bb, mid: 0x82a8aa, shade: 0x6b9092, top: 0xa8c8ca, bot: 0x517072 },
+      tealDeep:   { lit: 0x789fa2, mid: 0x668c8f, shade: 0x527477, top: 0x8eb2b5, bot: 0x3e595b },
+      dark:       { lit: 0x73675e, mid: 0x5e534b, shade: 0x4a4039, top: 0x85786e, bot: 0x332c27 },
+      plaza:      { lit: 0xe8e3d9, mid: 0xdfd9ce, shade: 0xd2ccc0, top: 0xebe6dc, bot: 0xa69e91 },
+      ghost:      { lit: 0xe6e1d7, mid: 0xdfd9ce, shade: 0xd8d2c6, top: 0xebe6dc, bot: 0xc2bbb0 }
+    };
+
+    const washPositions = [];
+    const washColors = [];
+
+    const inkLayers = {
+      bold:   [], // Primary structural silhouettes, arch rings, column shafts
+      medium: [], // Secondary architectural edges, capitals, stone courses
+      fine:   [], // Directional shadow hatching, roof & stone texture
+      rust:   [], // Terracotta course hatching & ornamental inlays
+      teal:   [], // Intarsia & window reflection strokes
+      faint:  []  // Plumb-line diagram & site grid context
+    };
+
+    const tempColor = new THREE.Color();
+    // Light vector from upper front-left (matches axonometric sun convention)
+    const lightDir = new THREE.Vector3(-0.35, 0.25, 0.90).normalize();
+
+    function computeDirectionalHex(palName, nx, ny, nz) {
+      const pal = PALETTE[palName] || PALETTE.cream;
+      if (ny > 0.65) return pal.top;
+      if (ny < -0.65) return pal.bot;
+      const dot = nx * lightDir.x + ny * lightDir.y + nz * lightDir.z;
+      if (dot > 0.28) return pal.lit;
+      if (dot > -0.18) return pal.mid;
+      return pal.shade;
+    }
+
+    function pushQuadWorld(p0, p1, p2, p3, hexColor, shadeShift = 0) {
+      tempColor.setHex(hexColor);
+      if (shadeShift !== 0) tempColor.offsetHSL(0, 0, shadeShift);
+      const r = tempColor.r, g = tempColor.g, b = tempColor.b;
+      washPositions.push(p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2]);
+      washPositions.push(p0[0], p0[1], p0[2], p2[0], p2[1], p2[2], p3[0], p3[1], p3[2]);
+      for (let i = 0; i < 6; i++) washColors.push(r, g, b);
+    }
+
+    function pushTriWorld(p0, p1, p2, hexColor, shadeShift = 0) {
+      tempColor.setHex(hexColor);
+      if (shadeShift !== 0) tempColor.offsetHSL(0, 0, shadeShift);
+      const r = tempColor.r, g = tempColor.g, b = tempColor.b;
+      washPositions.push(p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2]);
+      for (let i = 0; i < 3; i++) washColors.push(r, g, b);
+    }
+
+    function addLineWorld(p1, p2, layer = 'medium', overshoot = 0.022) {
+      const x1 = p1[0], y1 = p1[1], z1 = p1[2];
+      const x2 = p2[0], y2 = p2[1], z2 = p2[2];
+      const dx = x2 - x1, dy = y2 - y1, dz = z2 - z1;
+      const len = Math.hypot(dx, dy, dz);
+      if (len < 1e-5) return;
+      const ux = (dx / len) * overshoot;
+      const uy = (dy / len) * overshoot;
+      const uz = (dz / len) * overshoot;
+
+      const j = layer === 'faint' ? 0 : 0.007;
+      const ax = x1 - ux + (rng() - 0.5) * j;
+      const ay = y1 - uy + (rng() - 0.5) * j;
+      const az = z1 - uz + (rng() - 0.5) * j;
+      const bx = x2 + ux + (rng() - 0.5) * j;
+      const by = y2 + uy + (rng() - 0.5) * j;
+      const bz = z2 + uz + (rng() - 0.5) * j;
+
+      const target = inkLayers[layer] || inkLayers.medium;
+      target.push(ax, ay, az, bx, by, bz);
+
+      if (layer === 'bold') {
+        const off = 0.017;
+        target.push(ax + off, ay, az - off, bx + off, by, bz - off);
+        target.push(ax - off * 0.7, ay + off * 0.7, az + off * 0.7, bx - off * 0.7, by + off * 0.7, bz + off * 0.7);
+      }
+    }
+
+    // =========================================================================
+    // SUBJECT TRANSFORM — every builder emits points through subjectPoint().
+    // Identity for an upright subject. Pisa overrides it with a curved leaning
+    // spine; keep the hook so warped subjects stay possible. Builders that work
+    // in plain world space (addWorldBox, dashed lines, shrubs) bypass it.
+    // =========================================================================
+    function subjectPoint(x, y, z) { return [x, y, z]; }
+
+
+    // =========================================================================
+    // 4. BUILDERS (cylinder / cornice / column, generalised from Pisa)
+    // =========================================================================
+    /**
+     * Builds a cylindrical or polygonal drum/ring between rInner and rOuter, y0 and y1
+     */
+    function addCylinder(y0, y1, rOuter, rInner, segs, palName = 'cream', opts = {}) {
+      const dTheta = (Math.PI * 2) / segs;
+      const startAngle = opts.angleOffset || 0;
+      const edgeLayer = opts.edgeLayer || 'medium';
+
+      for (let i = 0; i < segs; i++) {
+        const a0 = startAngle + i * dTheta;
+        const a1 = startAngle + (i + 1) * dTheta;
+        const aMid = (a0 + a1) * 0.5;
+
+        const c0 = Math.cos(a0), s0 = Math.sin(a0);
+        const c1 = Math.cos(a1), s1 = Math.sin(a1);
+        const nx = Math.cos(aMid), nz = Math.sin(aMid);
+
+        // Outer wall quad
+        const p00 = subjectPoint(c0 * rOuter, y0, s0 * rOuter);
+        const p10 = subjectPoint(c1 * rOuter, y0, s1 * rOuter);
+        const p11 = subjectPoint(c1 * rOuter, y1, s1 * rOuter);
+        const p01 = subjectPoint(c0 * rOuter, y1, s0 * rOuter);
+
+        const colOuter = computeDirectionalHex(palName, nx, 0, nz);
+        const shift = (rng() - 0.5) * 0.018;
+        pushQuadWorld(p00, p10, p11, p01, colOuter, shift);
+
+        // Top & bottom perimeter ink rings
+        addLineWorld(p00, p10, edgeLayer, 0.015);
+        addLineWorld(p01, p11, edgeLayer, 0.015);
+
+        // Silhouette and periodic vertical joint lines
+        const viewDot = nx * 0.707 + nz * 0.707;
+        const CrossSilhouette = Math.abs(nx * 0.707 - nz * 0.707);
+        if (CrossSilhouette > 0.96) {
+          addLineWorld(p00, p01, 'bold', 0.02);
+        } else if (opts.verticalJoints && i % opts.verticalJoints === 0) {
+          addLineWorld(p00, p01, 'fine', 0.01);
+        }
+
+        // Directional right-side shadow hatching on cylindrical surfaces
+        const lightDot = nx * lightDir.x + nz * lightDir.z;
+        if (opts.shadeHatch !== false && lightDot < -0.12 && viewDot > -0.35) {
+          const hatchCount = lightDot < -0.5 ? 3 : 2;
+          for (let h = 1; h <= hatchCount; h++) {
+            const t = h / (hatchCount + 1);
+            const ha = a0 + (a1 - a0) * t;
+            const hc = Math.cos(ha) * (rOuter + 0.015);
+            const hs = Math.sin(ha) * (rOuter + 0.015);
+            addLineWorld(
+              subjectPoint(hc, y0 + 0.04, hs),
+              subjectPoint(hc, y1 - 0.04, hs),
+              opts.hatchLayer || 'fine',
+              0
+            );
+          }
+        }
+
+        // Optional horizontal stone/brick courses
+        if (opts.courses) {
+          const cLayer = palName === 'terracotta' || palName === 'brickDark' ? 'rust' : 'fine';
+          for (let c = 1; c < opts.courses; c++) {
+            const cy = y0 + ((y1 - y0) * c) / opts.courses;
+            addLineWorld(
+              subjectPoint(c0 * (rOuter + 0.012), cy, s0 * (rOuter + 0.012)),
+              subjectPoint(c1 * (rOuter + 0.012), cy, s1 * (rOuter + 0.012)),
+              cLayer,
+              0.01
+            );
+          }
+        }
+
+        // Top and bottom caps (and inner wall if hollow)
+        if (rInner > 0) {
+          const q00 = subjectPoint(c0 * rInner, y0, s0 * rInner);
+          const q10 = subjectPoint(c1 * rInner, y0, s1 * rInner);
+          const q11 = subjectPoint(c1 * rInner, y1, s1 * rInner);
+          const q01 = subjectPoint(c0 * rInner, y1, s0 * rInner);
+
+          // Inner wall
+          const colInner = computeDirectionalHex(palName, -nx, 0, -nz);
+          pushQuadWorld(q10, q00, q01, q11, colInner, -0.04);
+          // Top annular ring
+          pushQuadWorld(p01, p11, q11, q01, computeDirectionalHex(palName, 0, 1, 0), shift);
+          // Bottom annular soffit
+          pushQuadWorld(q00, q10, p10, p00, computeDirectionalHex(palName, 0, -1, 0), shift);
+
+          if (opts.innerEdges) {
+            addLineWorld(q01, q11, 'medium', 0.01);
+            addLineWorld(q00, q10, 'medium', 0.01);
+          }
+        } else {
+          const centerTop = subjectPoint(0, y1, 0);
+          const centerBot = subjectPoint(0, y0, 0);
+          pushTriWorld(p01, p11, centerTop, computeDirectionalHex(palName, 0, 1, 0), shift);
+          pushTriWorld(p10, p00, centerBot, computeDirectionalHex(palName, 0, -1, 0), shift);
+        }
+      }
+    }
+    /**
+     * Adds a multi-course Romanesque overhanging circular cornice band (COURSES)
+     */
+    function addCircularCornice(y, h, rBase, segs = 36, opts = {}) {
+      const over = opts.overhang || 0.28;
+      const rInner = opts.rInner || 0;
+      const h1 = h * 0.24;
+      const h2 = h * 0.48;
+      const h3 = h * 0.28;
+
+      // Lower stone astragal ring
+      addCylinder(y, y + h1, rBase + over * 0.35, rInner, segs, 'cream', { edgeLayer: 'medium' });
+      // Middle terracotta polychrome frieze with brick courses
+      addCylinder(y + h1, y + h1 + h2, rBase + over * 0.65, rInner, segs, opts.dark ? 'brickDark' : 'terracotta', {
+        edgeLayer: 'medium',
+        courses: 2,
+        hatchLayer: 'rust'
+      });
+      // Upper overhanging corona slab
+      addCylinder(y + h1 + h2, y + h, rBase + over, rInner, segs, 'cream', {
+        edgeLayer: 'bold'
+      });
+
+      // Radial dentil brackets under the cornice overhang
+      const bracketCount = segs * 2;
+      for (let i = 0; i < bracketCount; i++) {
+        const ang = (i * Math.PI * 2) / bracketCount;
+        const c = Math.cos(ang), s = Math.sin(ang);
+        addLineWorld(
+          subjectPoint(c * rBase, y + h1, s * rBase),
+          subjectPoint(c * (rBase + over * 0.92), y + h1 + h2, s * (rBase + over * 0.92)),
+          'medium',
+          0
+        );
+      }
+    }
+    /**
+     * Adds a classical Romanesque column with base plinth, fluted shaft, and capital
+     */
+    function addColumn(angle, radius, y0, y1, colRadius = 0.22, opts = {}) {
+      const cx = Math.cos(angle) * radius;
+      const cz = Math.sin(angle) * radius;
+      const h = y1 - y0;
+      const baseH = Math.min(0.42, h * 0.12);
+      const capH = Math.min(0.52, h * 0.15);
+      const shaftY0 = y0 + baseH;
+      const shaftY1 = y1 - capH;
+
+      // Helper for small local prism around (cx, cz) aligned radially
+      function addLocalPrism(py0, py1, halfW, halfD, palName, lyr = 'medium') {
+        const uX = Math.cos(angle), uZ = Math.sin(angle); // Radial outward
+        const vX = -uZ, vZ = uX;                          // Tangential
+
+        const corners = [
+          [cx + uX * halfD - vX * halfW, cz + uZ * halfD - vZ * halfW],
+          [cx + uX * halfD + vX * halfW, cz + uZ * halfD + vZ * halfW],
+          [cx - uX * halfD + vX * halfW, cz - uZ * halfD + vZ * halfW],
+          [cx - uX * halfD - vX * halfW, cz - uZ * halfD - vZ * halfW]
+        ];
+        const normals = [
+          [uX, uZ],
+          [vX, vZ],
+          [-uX, -uZ],
+          [-vX, -vZ]
+        ];
+
+        const botPts = corners.map(c => subjectPoint(c[0], py0, c[1]));
+        const topPts = corners.map(c => subjectPoint(c[0], py1, c[1]));
+
+        for (let f = 0; f < 4; f++) {
+          const nf = (f + 1) % 4;
+          const col = computeDirectionalHex(palName, normals[f][0], 0, normals[f][1]);
+          pushQuadWorld(botPts[f], botPts[nf], topPts[nf], topPts[f], col, 0);
+          addLineWorld(botPts[f], botPts[nf], lyr, 0.015);
+          addLineWorld(topPts[f], topPts[nf], lyr, 0.015);
+          addLineWorld(botPts[f], topPts[f], lyr, 0.015);
+        }
+        pushQuadWorld(topPts[0], topPts[1], topPts[2], topPts[3], PALETTE[palName].top, 0);
+        pushQuadWorld(botPts[3], botPts[2], botPts[1], botPts[0], PALETTE[palName].bot, 0);
+      }
+
+      // 1. Moulded column base pedestal
+      addLocalPrism(y0, y0 + baseH * 0.55, colRadius * 1.45, colRadius * 1.45, 'stone', 'medium');
+      addLocalPrism(y0 + baseH * 0.55, shaftY0, colRadius * 1.2, colRadius * 1.2, 'terracotta', 'medium');
+
+      // 2. Octagonal/cylindrical column shaft with vertical ink fluting
+      const shaftSegs = 6;
+      for (let s = 0; s < shaftSegs; s++) {
+        const a0 = angle + (s * Math.PI * 2) / shaftSegs;
+        const a1 = angle + ((s + 1) * Math.PI * 2) / shaftSegs;
+        const nx = Math.cos((a0 + a1) * 0.5), nz = Math.sin((a0 + a1) * 0.5);
+
+        const p00 = subjectPoint(cx + Math.cos(a0) * colRadius, shaftY0, cz + Math.sin(a0) * colRadius);
+        const p10 = subjectPoint(cx + Math.cos(a1) * colRadius, shaftY0, cz + Math.sin(a1) * colRadius);
+        const p11 = subjectPoint(cx + Math.cos(a1) * colRadius, shaftY1, cz + Math.sin(a1) * colRadius);
+        const p01 = subjectPoint(cx + Math.cos(a0) * colRadius, shaftY1, cz + Math.sin(a0) * colRadius);
+
+        pushQuadWorld(p00, p10, p11, p01, computeDirectionalHex(opts.shaftPalette || 'cream', nx, 0, nz), 0.02);
+        addLineWorld(p00, p01, s % 2 === 0 ? 'bold' : 'fine', 0.01);
+      }
+
+      // 3. Corinthian bell capital & terracotta/cream abacus block
+      addLocalPrism(shaftY1, shaftY1 + capH * 0.58, colRadius * 1.32, colRadius * 1.32, 'cream', 'medium');
+      addLocalPrism(shaftY1 + capH * 0.58, y1, colRadius * 1.58, colRadius * 1.58, 'terracotta', 'bold');
+    }
+    // =========================================================================
+    // 5. SITE FURNITURE HELPERS
+    // =========================================================================
+    function addWorldBox(x, y, z, w, h, d, palName = 'plaza', lyr = 'bold') {
+      const pal = PALETTE[palName] || PALETTE.plaza;
+      const x0 = x, x1 = x + w, y0 = y, y1 = y + h, z0 = z, z1 = z + d;
+      const p000 = [x0, y0, z0], p100 = [x1, y0, z0], p110 = [x1, y1, z0], p010 = [x0, y1, z0];
+      const p001 = [x0, y0, z1], p101 = [x1, y0, z1], p111 = [x1, y1, z1], p011 = [x0, y1, z1];
+
+      pushQuadWorld(p001, p101, p111, p011, pal.lit, 0);
+      pushQuadWorld(p101, p100, p110, p111, pal.shade, 0);
+      pushQuadWorld(p011, p111, p110, p010, pal.top, 0);
+      pushQuadWorld(p000, p100, p101, p001, pal.bot, 0);
+      pushQuadWorld(p100, p000, p010, p110, pal.shade, 0);
+      pushQuadWorld(p000, p001, p011, p010, pal.mid, 0);
+
+      const edges = [
+        [p000, p100], [p100, p101], [p101, p001], [p001, p000],
+        [p010, p110], [p110, p111], [p111, p011], [p011, p010],
+        [p000, p010], [p100, p110], [p101, p111], [p001, p011]
+      ];
+      edges.forEach(e => addLineWorld(e[0], e[1], lyr, 0.02));
+    }
+
+    function addDashedLineWorld(p1, p2, dashLen = 0.5, gapLen = 0.4) {
+      const dx = p2[0] - p1[0], dy = p2[1] - p1[1], dz = p2[2] - p1[2];
+      const dist = Math.hypot(dx, dy, dz);
+      const ux = dx / dist, uy = dy / dist, uz = dz / dist;
+      let cur = 0;
+      while (cur < dist) {
+        const end = Math.min(dist, cur + dashLen);
+        addLineWorld(
+          [p1[0] + ux * cur, p1[1] + uy * cur, p1[2] + uz * cur],
+          [p1[0] + ux * end, p1[1] + uy * end, p1[2] + uz * end],
+          'faint',
+          0
+        );
+        cur += dashLen + gapLen;
+      }
+    }
+
+    function addSketchShrub(sx, sz) {
+      const r = 0.24 + rng() * 0.09;
+      const h = 0.35 + rng() * 0.12;
+      addLineWorld([sx, -0.45, sz], [sx, -0.45 + h * 0.4, sz], 'medium', 0);
+      addLineWorld([sx - r * 0.8, -0.44, sz + r * 0.5], [sx + r * 0.9, -0.44, sz - r * 0.5], 'fine', 0);
+      const cy = -0.45 + h;
+      addLineWorld([sx - r, cy, sz], [sx, cy + r * 0.7, sz - r], 'medium', 0.01);
+      addLineWorld([sx, cy + r * 0.7, sz - r], [sx + r, cy, sz], 'medium', 0.01);
+      addLineWorld([sx + r, cy, sz], [sx, cy - r * 0.4, sz + r], 'medium', 0.01);
+      addLineWorld([sx, cy - r * 0.4, sz + r], [sx - r, cy, sz], 'medium', 0.01);
+    }
+
+
+    // =========================================================================
+    // DEMO SUBJECT — a small rotunda. Replace this whole section with the real
+    // subject. It exercises: plinth + site furniture, columns, a hollow drum
+    // (entablature ring), a stacked cornice, and a conical roof.
+    // =========================================================================
+    const pMinX = -12.5, pMaxX = 12.5, pMinZ = -12.5, pMaxZ = 12.5;
+    addWorldBox(pMinX, -0.45, pMinZ, pMaxX - pMinX, 0.45, pMaxZ - pMinZ, 'plaza', 'bold');
+    addWorldBox(pMinX - 0.45, -0.48, pMinZ - 0.45, pMaxX - pMinX + 0.9, 0.06, pMaxZ - pMinZ + 0.9, 'plaza', 'bold');
+    // stepped stylobate
+    addWorldBox(-7, 0, -7, 14, 0.5, 14, 'stone', 'bold');
+    addWorldBox(-6, 0.5, -6, 12, 0.5, 12, 'stone', 'bold');
+
+    // ring of columns on the stylobate
+    const colCount = 10, colR = 4.6;
+    for (let i = 0; i < colCount; i++) {
+      addColumn((i / colCount) * Math.PI * 2, colR, 1.0, 6.4, 0.26, {});
+    }
+    // entablature: hollow drum ring + stacked cornice
+    addCylinder(6.4, 7.15, 5.55, 3.9, 40, 'cream', { edgeLayer: 'medium', courses: 2 });
+    addCircularCornice(7.15, 0.85, 5.45, 40, {});
+    // roof drum + cone
+    addCylinder(8.0, 9.3, 4.1, 0, 32, 'stone', { edgeLayer: 'medium', courses: 3 });
+    (function addCone(y0, r, h, segs, palName) {
+      for (let i = 0; i < segs; i++) {
+        const a0 = (i / segs) * Math.PI * 2, a1 = ((i + 1) / segs) * Math.PI * 2;
+        const am = (a0 + a1) / 2;
+        const p0 = subjectPoint(Math.cos(a0) * r, y0, Math.sin(a0) * r);
+        const p1 = subjectPoint(Math.cos(a1) * r, y0, Math.sin(a1) * r);
+        const apex = subjectPoint(0, y0 + h, 0);
+        pushTriWorld(p0, p1, apex, computeDirectionalHex(palName, Math.cos(am), 0.35, Math.sin(am)));
+        addLineWorld(p0, apex, 'medium', 0.01);
+        addLineWorld(p0, p1, 'medium', 0.01);
+      }
+    })(9.3, 4.55, 2.6, 32, 'terracotta');
+    // finial
+    addCylinder(11.9, 12.5, 0.32, 0, 12, 'dark', {});
+
+    // site furniture: dashed survey grid + shrubs + ghost context
+    const siteLim = 21.0;
+    for (let s = -19.5; s <= 19.5; s += 3.5) {
+      addDashedLineWorld([s, -0.45, -siteLim], [s, -0.45, siteLim]);
+      addDashedLineWorld([-siteLim, -0.45, s], [siteLim, -0.45, s]);
+    }
+    for (let sx = -18.5; sx <= 19.5; sx += 3.0) {
+      for (let sz = -17.5; sz <= 18.5; sz += 3.0) {
+        const inside = sx > pMinX - 1.0 && sx < pMaxX + 1.0 && sz > pMinZ - 1.0 && sz < pMaxZ + 1.0;
+        if (!inside && Math.hypot(sx, sz) < 22.5 && rng() > 0.30) addSketchShrub(sx, sz);
+      }
+    }
+    addWorldBox(pMaxX + 1.2, -0.45, -6.5, 4.8, 5.2, 8.2, 'ghost', 'faint');
+    addWorldBox(pMinX - 6.8, -0.45, -5.5, 5.8, 7.8, 9.0, 'ghost', 'faint');
+
+    // =========================================================================
+    // 6. BUILD THREE.JS GEOMETRIES & RENDER LOOP
+    // =========================================================================
+    const washGeo = new THREE.BufferGeometry();
+    washGeo.setAttribute('position', new THREE.Float32BufferAttribute(washPositions, 3));
+    washGeo.setAttribute('color', new THREE.Float32BufferAttribute(washColors, 3));
+
+    const washMat = new THREE.MeshBasicMaterial({
+      vertexColors: true,
+      polygonOffset: true,
+      polygonOffsetFactor: 1.4,
+      polygonOffsetUnits: 1.4
+    });
+    scene.add(new THREE.Mesh(washGeo, washMat));
+
+    function createInkSegmentMesh(vertices, hexColor, opacity) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+      const mat = new THREE.LineBasicMaterial({
+        color: hexColor,
+        transparent: true,
+        opacity: opacity
+      });
+      return new THREE.LineSegments(geo, mat);
+    }
+
+    scene.add(createInkSegmentMesh(inkLayers.bold,   0x211b17, 0.92));
+    scene.add(createInkSegmentMesh(inkLayers.medium, 0x332a24, 0.80));
+    scene.add(createInkSegmentMesh(inkLayers.fine,   0x4a3f37, 0.44));
+    scene.add(createInkSegmentMesh(inkLayers.rust,   0x8c4531, 0.64));
+    scene.add(createInkSegmentMesh(inkLayers.teal,   0x527d80, 0.52));
+    scene.add(createInkSegmentMesh(inkLayers.faint,  0x6b6157, 0.32));
+
+    window.addEventListener('resize', () => {
+      const newAspect = window.innerWidth / window.innerHeight;
+      camera.left = (-frustumSize * newAspect) / 2;
+      camera.right = (frustumSize * newAspect) / 2;
+      camera.top = frustumSize / 2;
+      camera.bottom = -frustumSize / 2;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      generatePaperOverlay();
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+</script>
+</body>
+</html>

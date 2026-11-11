@@ -61,4 +61,4 @@ The `banner-*.gif` files in the root are the animated banners made for those sho
 
 ## The skill
 
-This repository is also the home of the skill used to write these plates — the style contract above, the builders, and the verification pass, written down so a new plate can be commissioned the same way these were. The plates and their banners are here now; the skill document lives here alongside them.
+This repository is also the home of the skill used to write these plates: **[SKILL.md](SKILL.md)** — the style contract, the builder catalog, the workflow, and the verification pass, written down so a new plate can be commissioned the same way these were. It ships with **[template.html](template.html)**, the canonical engine with a small demo rotunda: copy it, set the seed, replace the demo subject.
