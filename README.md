@@ -8,15 +8,15 @@ Drag to orbit, scroll to zoom, double-click to reset the view.
 
 ## The plates
 
-| Plate | File | Seed | What it is |
-| --- | --- | --- | --- |
-| Christ the Redeemer | [christ-the-redeemer.html](plates/christ-the-redeemer.html) | 1931 | The Art Deco statue on its octagonal pedestal above the stepped Corcovado terrace: fluted soapstone robe, diagonal mantle, outstretched sleeve-section arms. |
-| Colosseum | [colosseum.html](plates/colosseum.html) | 80 | The Flavian amphitheatre cut open at true proportions: 80 bays, three arcaded storeys and the attic, the cavea stepped back to the arena wall, the two-level hypogeum exposed under the sand. |
-| Hanging Gardens of Babylon | [hanging-gardens.html](plates/hanging-gardens.html) | 601 | A ziggurat of six planted terraces: hedged parapets, palms overhanging the edges, a double cascade down the near corner into walled basins, a brick cistern at the summit. |
-| Hanging Gardens, earlier reconstruction | [hanging-gardens-reconstruction.html](plates/hanging-gardens-reconstruction.html) | 604 | An earlier pass at the same subject — four stepped terraces, waterfalls down the tiers, drawn for a front view rather than a full orbit. Kept because the difference between the two is the point. |
-| Hoogbouw | [hoogbouw.html](plates/hoogbouw.html) | 3727 | The anonymous Dutch street building as a cutaway: six floors on a structural bay, canted bay windows, cornice bands, a stepped gable, one bay opened to expose the floor structure. |
-| Petra — Al-Khazneh (The Treasury) | [petra.html](plates/petra.html) | 312 | The Treasury facade carved into a stratified rose-red cliff: six columns and relief figures below, a broken pediment, tholos and urn above, the Siq slit in the canyon spur beside it. |
-| Leaning Tower of Pisa | [pisa.html](plates/pisa.html) | 1173 | Eight tiers — fifteen blind arches at ground level, six open colonnades, the belfry — carried on a spine that eases from 5.65° to 3.65° where the masons corrected the lean. |
+| Plate | Seed |
+| --- | --- |
+| [Christ the Redeemer](plates/christ-the-redeemer.html) | 1931 |
+| [Colosseum](plates/colosseum.html) | 80 |
+| [Hanging Gardens of Babylon](plates/hanging-gardens.html) | 601 |
+| [Hanging Gardens, earlier reconstruction](plates/hanging-gardens-reconstruction.html) | 604 |
+| [Hoogbouw](plates/hoogbouw.html) | 3727 |
+| [Petra — Al-Khazneh (The Treasury)](plates/petra.html) | 312 |
+| [Leaning Tower of Pisa](plates/pisa.html) | 1173 |
 
 The seed is the `mulberry32` PRNG seed baked into each file: a year that matters to the subject (1931 the statue was dedicated, AD 80 the Colosseum, 1173 the first stone of Pisa).
 
@@ -36,12 +36,7 @@ Every plate follows the same contract, which is what makes them a series rather 
 
 ## Viewing
 
-Open any `.html` file in a browser, or serve the folder:
-
-```bash
-python3 -m http.server 8000
-# then visit http://localhost:8000/pisa.html
-```
+Open any file in `plates/` in a browser. That's it — no server, no build step.
 
 ## Published
 
