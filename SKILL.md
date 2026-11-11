@@ -1,13 +1,13 @@
 ---
 name: axonometric-plates
-description: Write a new plate for the Axonometric Plates series — a single-file Three.js axonometric architectural drawing of a building or monument (orthographic orbit camera, drafting-paper overlay, flat colour wash + six-weight ink linework, seeded deterministic PRNG), matching the seven existing plates. Use when asked to create or add a plate, to draw a building or monument "in the same style" as the plates, or to extend the wonders/architecture series.
+description: Write a new plate for the Axonometric Plates series — a single-file Three.js axonometric architectural drawing of a building or monument (orthographic orbit camera, drafting-paper overlay, flat colour wash + six-weight ink linework, seeded deterministic PRNG), matching the existing plates. Use when asked to create or add a plate, to draw a building or monument "in the same style" as the plates, or to extend the wonders/architecture series.
 ---
 
 # Axonometric Plates
 
 A plate is an architectural drawing that runs in the browser: one self-contained HTML file, a building built procedurally in Three.js and presented as an axonometric on drafting paper — flat ink-and-wash surfaces, one light direction, the structure opened up rather than hidden, free to orbit.
 
-The seven existing plates in this repo are the specification by example: `plates/christ-the-redeemer.html`, `plates/colosseum.html`, `plates/hanging-gardens.html`, `plates/hanging-gardens-reconstruction.html`, `plates/hoogbouw.html`, `plates/petra.html`, `plates/pisa.html`. Before writing a new one, read `plates/template.html` (the canonical engine with a demo subject) and study whichever existing plate is closest to the new subject.
+The existing plates in this repo are the specification by example: `plates/chichen-itza.html`, `plates/christ-the-redeemer.html`, `plates/colosseum.html`, `plates/great-wall.html`, `plates/hanging-gardens.html`, `plates/hanging-gardens-reconstruction.html`, `plates/hoogbouw.html`, `plates/machu-picchu.html`, `plates/petra.html`, `plates/pisa.html`, `plates/taj-mahal.html`. Before writing a new one, read `plates/template.html` (the canonical engine with a demo subject) and study whichever existing plate is closest to the new subject.
 
 ## The contract
 
