@@ -1,6 +1,6 @@
 # Axonometric Plates
 
-![Colosseum — animated showcase banner](banner-colosseum.gif)
+![Colosseum — animated showcase banner](assets/banner-colosseum.gif)
 
 Architectural drawings that run in the browser. Each plate is a single HTML file: a building drawn as an axonometric on drafting paper — flat ink-and-wash surfaces, one light direction, the structure opened up rather than hidden — built procedurally in Three.js and free to orbit.
 
@@ -10,17 +10,17 @@ Drag to orbit, scroll to zoom, double-click to reset the view.
 
 | Plate | File | Seed | What it is |
 | --- | --- | --- | --- |
-| Christ the Redeemer | [christ-the-redeemer.html](christ-the-redeemer.html) | 1931 | The Art Deco statue on its octagonal pedestal above the stepped Corcovado terrace: fluted soapstone robe, diagonal mantle, outstretched sleeve-section arms. |
-| Colosseum | [colosseum.html](colosseum.html) | 80 | The Flavian amphitheatre cut open at true proportions: 80 bays, three arcaded storeys and the attic, the cavea stepped back to the arena wall, the two-level hypogeum exposed under the sand. |
-| Hanging Gardens of Babylon | [hanging-gardens.html](hanging-gardens.html) | 601 | A ziggurat of six planted terraces: hedged parapets, palms overhanging the edges, a double cascade down the near corner into walled basins, a brick cistern at the summit. |
-| Hanging Gardens, earlier reconstruction | [hanging-gardens-reconstruction.html](hanging-gardens-reconstruction.html) | 604 | An earlier pass at the same subject — four stepped terraces, waterfalls down the tiers, drawn for a front view rather than a full orbit. Kept because the difference between the two is the point. |
-| Hoogbouw | [hoogbouw.html](hoogbouw.html) | 3727 | The anonymous Dutch street building as a cutaway: six floors on a structural bay, canted bay windows, cornice bands, a stepped gable, one bay opened to expose the floor structure. |
-| Petra — Al-Khazneh (The Treasury) | [petra.html](petra.html) | 312 | The Treasury facade carved into a stratified rose-red cliff: six columns and relief figures below, a broken pediment, tholos and urn above, the Siq slit in the canyon spur beside it. |
-| Leaning Tower of Pisa | [pisa.html](pisa.html) | 1173 | Eight tiers — fifteen blind arches at ground level, six open colonnades, the belfry — carried on a spine that eases from 5.65° to 3.65° where the masons corrected the lean. |
+| Christ the Redeemer | [christ-the-redeemer.html](plates/christ-the-redeemer.html) | 1931 | The Art Deco statue on its octagonal pedestal above the stepped Corcovado terrace: fluted soapstone robe, diagonal mantle, outstretched sleeve-section arms. |
+| Colosseum | [colosseum.html](plates/colosseum.html) | 80 | The Flavian amphitheatre cut open at true proportions: 80 bays, three arcaded storeys and the attic, the cavea stepped back to the arena wall, the two-level hypogeum exposed under the sand. |
+| Hanging Gardens of Babylon | [hanging-gardens.html](plates/hanging-gardens.html) | 601 | A ziggurat of six planted terraces: hedged parapets, palms overhanging the edges, a double cascade down the near corner into walled basins, a brick cistern at the summit. |
+| Hanging Gardens, earlier reconstruction | [hanging-gardens-reconstruction.html](plates/hanging-gardens-reconstruction.html) | 604 | An earlier pass at the same subject — four stepped terraces, waterfalls down the tiers, drawn for a front view rather than a full orbit. Kept because the difference between the two is the point. |
+| Hoogbouw | [hoogbouw.html](plates/hoogbouw.html) | 3727 | The anonymous Dutch street building as a cutaway: six floors on a structural bay, canted bay windows, cornice bands, a stepped gable, one bay opened to expose the floor structure. |
+| Petra — Al-Khazneh (The Treasury) | [petra.html](plates/petra.html) | 312 | The Treasury facade carved into a stratified rose-red cliff: six columns and relief figures below, a broken pediment, tholos and urn above, the Siq slit in the canyon spur beside it. |
+| Leaning Tower of Pisa | [pisa.html](plates/pisa.html) | 1173 | Eight tiers — fifteen blind arches at ground level, six open colonnades, the belfry — carried on a spine that eases from 5.65° to 3.65° where the masons corrected the lean. |
 
 The seed is the `mulberry32` PRNG seed baked into each file: a year that matters to the subject (1931 the statue was dedicated, AD 80 the Colosseum, 1173 the first stone of Pisa).
 
-![Leaning Tower of Pisa — animated showcase banner](banner-pisa.gif)
+![Leaning Tower of Pisa — animated showcase banner](assets/banner-pisa.gif)
 
 ## How a plate is built
 
@@ -55,10 +55,10 @@ All seven plates are also published, with write-ups, in the Showcase on The Blac
 - [Petra — Al-Khazneh (The Treasury)](https://theblackcat98.github.io/TheBlackCat/showcase/petra/)
 - [Leaning Tower of Pisa](https://theblackcat98.github.io/TheBlackCat/showcase/pisa/)
 
-The `banner-*.gif` files in the root are the animated banners made for those showcase exhibits; a few of them illustrate this README.
+The `banner-*.gif` files in `assets/` are the animated banners made for those showcase exhibits; a few of them illustrate this README.
 
-![Hanging Gardens of Babylon — animated showcase banner](banner-hanging-gardens.gif)
+![Hanging Gardens of Babylon — animated showcase banner](assets/banner-hanging-gardens.gif)
 
 ## The skill
 
-This repository is also the home of the skill used to write these plates: **[SKILL.md](SKILL.md)** — the style contract, the builder catalog, the workflow, and the verification pass, written down so a new plate can be commissioned the same way these were. It ships with **[template.html](template.html)**, the canonical engine with a small demo rotunda: copy it, set the seed, replace the demo subject.
+This repository is also the home of the skill used to write these plates: **[SKILL.md](SKILL.md)** — the style contract, the builder catalog, the workflow, and the verification pass, written down so a new plate can be commissioned the same way these were. It ships with **[template.html](plates/template.html)**, the canonical engine with a small demo rotunda: copy it, set the seed, replace the demo subject.

@@ -7,7 +7,7 @@ description: Write a new plate for the Axonometric Plates series — a single-fi
 
 A plate is an architectural drawing that runs in the browser: one self-contained HTML file, a building built procedurally in Three.js and presented as an axonometric on drafting paper — flat ink-and-wash surfaces, one light direction, the structure opened up rather than hidden, free to orbit.
 
-The seven existing plates in this repo are the specification by example: `christ-the-redeemer.html`, `colosseum.html`, `hanging-gardens.html`, `hanging-gardens-reconstruction.html`, `hoogbouw.html`, `petra.html`, `pisa.html`. Before writing a new one, read `template.html` (the canonical engine with a demo subject) and study whichever existing plate is closest to the new subject.
+The seven existing plates in this repo are the specification by example: `plates/christ-the-redeemer.html`, `plates/colosseum.html`, `plates/hanging-gardens.html`, `plates/hanging-gardens-reconstruction.html`, `plates/hoogbouw.html`, `plates/petra.html`, `plates/pisa.html`. Before writing a new one, read `plates/template.html` (the canonical engine with a demo subject) and study whichever existing plate is closest to the new subject.
 
 ## The contract
 
@@ -39,7 +39,7 @@ These are not defaults to tune per plate — they are what makes the plates a se
 
 `addLineWorld(p1, p2, layer, overshoot)` extends each segment slightly past its endpoints (default 0.022) and jitters the ends by ±0.007 from the PRNG (faint layer: no jitter). Bold is rationed — if everything is bold, nothing is.
 
-**Script structure** — numbered sections, in order: (1) PRNG + paper overlay, (2) scene + camera + controls + reset, (3) palette + wash/ink engine, (4) subject transform if any, (5+) builders, then subject assembly, site furniture, and finally geometry materialisation + render loop. `template.html` is this skeleton with the engine already in place.
+**Script structure** — numbered sections, in order: (1) PRNG + paper overlay, (2) scene + camera + controls + reset, (3) palette + wash/ink engine, (4) subject transform if any, (5+) builders, then subject assembly, site furniture, and finally geometry materialisation + render loop. `plates/template.html` is this skeleton with the engine already in place.
 
 ## Builders
 
@@ -59,11 +59,11 @@ Work in points-as-arrays `[x, y, z]`, in world units where the subject's real pr
 
 1. **Research the subject before drawing it.** The plates are credible because the counts are right: 80 bays and three arcades on the Colosseum, eight tiers on Pisa, six columns on the Treasury facade. Get the real proportions, the tier/bay/column counts, and the one or two structural facts the drawing should teach (Pisa's corrective curve, the Colosseum's exposed hypogeum). Decide what the cutaway or opening shows.
 2. **Choose the seed year and the palettes.** Paper, ink, and light never change; the subject's materials do (rose sandstones for Petra, cream marble + terracotta for Pisa). Add palettes, don't retune the engine.
-3. **Start from `template.html`.** Rename the title, set the seed, delete the demo rotunda, keep the engine and site furniture.
+3. **Start from `plates/template.html`.** Rename the title, set the seed, delete the demo rotunda, keep the engine and site furniture.
 4. **Model in passes:** massing first (does the silhouette read?), then structure and courses, then the signature details, then the opening/cutaway, then furniture. Run it between passes.
 5. **Fit the camera** (`frustumSize`, `targetY`) last, once the massing is final.
 6. **Verify** (below). Fix what the screenshots show, not what the code suggests.
-7. **Deliver** the standalone file as `<slug>.html` in this repo. The file is the deliverable — it must open and run by itself.
+7. **Deliver** the standalone file as `plates/<slug>.html` in this repo. The file is the deliverable — it must open and run by itself.
 
 ## Verification
 
@@ -77,4 +77,4 @@ Not optional, and not "the code looks right":
 
 ## Publishing (optional)
 
-The plates are also exhibited in the Showcase on The BlackCat site. Packaging for the site — vendored Three.js swap, toolkit chrome, write-up, registry entry, thumbnails — follows the contract in that repo's `AGENTS.md`; treat it as a separate step from writing the plate, and don't let site chrome leak back into the standalone files here. The `banner-*.gif` files in this repo are the animated banners made for those exhibits.
+The plates are also exhibited in the Showcase on The BlackCat site. Packaging for the site — vendored Three.js swap, toolkit chrome, write-up, registry entry, thumbnails — follows the contract in that repo's `AGENTS.md`; treat it as a separate step from writing the plate, and don't let site chrome leak back into the standalone files here. The `banner-*.gif` files in this repo's `assets/` are the animated banners made for those exhibits.
